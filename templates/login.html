@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Poker Tracker - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Texas Poker Tracker</h1>
+        </header>
+
+        <main id="main-content">
+            <div class="screen active">
+                <section class="card">
+                    <h2>Join the Game</h2>
+                    <form action="{{ url_for('login') }}" method="post" class="login-form">
+                        <div class="form-row">
+                            <label for="username">Username</label>
+                            <input type="text" id="username" name="username" required placeholder="Enter your username">
+                        </div>
+                        <div class="form-row">
+                            <label for="chips">Initial Chips (for new players)</label>
+                            <input type="number" id="chips" name="chips" value="1000" min="1">
+                        </div>
+                        <button type="submit" class="primary-btn">Join Game</button>
+                    </form>
+                </section>
+
+                {% if existing_players %}
+                <section class="card">
+                    <h2>Existing Players</h2>
+                    <div class="existing-players">
+                        {% for player in existing_players %}
+                        <div class="existing-player" data-username="{{ player }}">
+                            {{ player }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                {% endif %}
+            </div>
+        </main>
+
+        <footer>
+            <p>Texas Poker Tracker | Multiplayer Edition | 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Handle clicking on existing player
+            const existingPlayers = document.querySelectorAll('.existing-player');
+            existingPlayers.forEach(player => {
+                player.addEventListener('click', () => {
+                    const username = player.getAttribute('data-username');
+                    document.getElementById('username').value = username;
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

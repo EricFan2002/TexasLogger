@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Texas Poker Tracker - Multiplayer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+
+<body>
+    <div class="app-container">
+        <header>
+            <h1>Texas Poker Tracker</h1>
+            <div class="header-controls">
+                <span id="current-user">Logged in as: <strong>{{ session.username }}</strong></span>
+                <button id="settings-btn" class="icon-btn">⚙️</button>
+                <a href="{{ url_for('logout') }}" class="icon-btn">🚪</a>
+            </div>
+        </header>
+
+        <main id="main-content">
+            <!-- Player management screen (initial view) -->
+            <div id="player-management" class="screen active">
+                <section class="card">
+                    <h2>Players</h2>
+                    <div id="player-list" class="player-list"></div>
+                    <div class="add-chips-form">
+                        <input type="number" id="add-chips-amount" placeholder="Chip amount">
+                        <button id="add-chips-btn" class="secondary-btn">Add Chips</button>
+                        <button id="remove-chips-btn" class="secondary-btn danger">Remove Chips</button>
+                    </div>
+                </section>
+
+                <section class="card" id="quick-setup">
+                    <h2>Game Setup</h2>
+                    <div class="form-row">
+                        <label for="small-blind">Small Blind</label>
+                        <input type="number" id="small-blind" value="5">
+                    </div>
+                    <div class="form-row">
+                        <label for="big-blind">Big Blind</label>
+                        <input type="number" id="big-blind" value="10">
+                    </div>
+                    <div class="form-row">
+                        <label for="timer">Round Timer (minutes)</label>
+                        <input type="number" id="timer" value="15">
+                    </div>
+                    <div class="form-row">
+                        <label>Table Theme</label>
+                        <div class="theme-selector">
+                            <button class="theme-btn active" data-theme="casino">Casino Royale</button>
+                            <button class="theme-btn" data-theme="vegas">Vegas Night</button>
+                            <button class="theme-btn" data-theme="midnight">Midnight Blue</button>
+                            <button class="theme-btn" data-theme="crimson">Crimson Felt</button>
+                        </div>
+                    </div>
+                </section>
+
+                <button id="start-game-btn" class="primary-btn" disabled>Start Game</button>
+            </div>
+
+            <!-- Game screen (hidden initially) -->
+            <div id="game-screen" class="screen">
+                <section class="card poker-table-container">
+                    <div class="poker-table">
+                        <div class="table-center">
+                            <div class="pot-display">
+                                <h2>Current Pot</h2>
+                                <p id="pot-amount" class="highlight-text">$0</p>
+                                <div class="round-indicator">
+                                    <span id="current-round">Pre-Flop</span>
+                                    <div class="round-dots">
+                                        <span class="dot active"></span>
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                        <span class="dot"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="player-positions" class="player-positions"></div>
+                    </div>
+                </section>
+
+                <div class="game-controls">
+                    <section class="card">
+                        <h2>Place Bet</h2>
+                        <div class="bet-controls">
+                            <select id="bet-player-select">
+                                <option value="">Select Player</option>
+                            </select>
+                            <input type="number" id="bet-amount" placeholder="Amount">
+                            <button id="place-bet-btn" class="secondary-btn">Place Bet</button>
+                            <button id="fold-btn" class="secondary-btn danger">Fold</button>
+                        </div>
+                        <div id="quick-bet-buttons" class="quick-bet-buttons"></div>
+                    </section>
+
+                    <section class="card">
+                        <h2>Round Controls</h2>
+                        <div class="round-controls">
+                            <button id="next-round-btn" class="secondary-btn">Next Round</button>
+                        </div>
+                    </section>
+
+                    <section class="card">
+                        <h2>Distribute Winnings</h2>
+                        <div class="distribute-controls">
+                            <select id="winner-select">
+                                <option value="">Select Player</option>
+                            </select>
+                            <input type="number" id="win-amount" placeholder="Amount">
+                            <button id="pay-winnings-btn" class="secondary-btn">Pay</button>
+                        </div>
+                        <div id="quick-win-buttons" class="quick-bet-buttons"></div>
+                    </section>
+                </div>
+
+                <section class="card">
+                    <h2>Game Log</h2>
+                    <div id="game-log" class="game-log"></div>
+                </section>
+
+                <button id="end-game-btn" class="danger-btn">End Game</button>
+            </div>
+
+            <!-- Settings modal (hidden) -->
+            <div id="settings-modal" class="modal">
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Settings</h2>
+                    <div class="form-row">
+                        <label>Table Theme</label>
+                        <div class="theme-selector">
+                            <button class="theme-btn active" data-theme="casino">Casino Royale</button>
+                            <button class="theme-btn" data-theme="vegas">Vegas Night</button>
+                            <button class="theme-btn" data-theme="midnight">Midnight Blue</button>
+                            <button class="theme-btn" data-theme="crimson">Crimson Felt</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Texas Poker Tracker | Multiplayer Edition | 2025</p>
+        </footer>
+    </div>
+
+    <!-- Socket.IO -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Client JS -->
+    <script src="{{ url_for('static', filename='js/client.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+</body>
+
+</html>
