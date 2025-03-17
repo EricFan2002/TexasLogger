@@ -1,6 +1,15 @@
 document.addEventListener('DOMContentLoaded', () => {
     console.log('DOM content loaded - initializing ui.js...');
 
+    // Variables for table resizing and dragging
+    let tableScale = 1;
+    let tableIsDragging = false;
+    let tableDragStartX = 0;
+    let tableDragStartY = 0;
+    let tablePositionX = 0;
+    let tablePositionY = 0;
+    let tableInitialized = false;
+
     // Store the real updateUI function so client.js can find it
     window.realUpdateUI = function () {
         updatePlayerList();
@@ -17,6 +26,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Add the standard bet options
             addStandardBetOptions();
+
+            // Setup resizable table (only needs to run once)
+            if (!tableInitialized) {
+                setupResizableTable();
+                tableInitialized = true;
+            }
         }
     };
 
@@ -137,6 +152,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Add the standard bet options
             addStandardBetOptions();
+
+            // Setup resizable table (only needs to run once)
+            if (!tableInitialized) {
+                setupResizableTable();
+                tableInitialized = true;
+            }
         }
     };
 
@@ -170,6 +191,116 @@ document.addEventListener('DOMContentLoaded', () => {
 
             quickBetButtonsEl.appendChild(standardBetsContainer);
         }
+    }
+
+    // Function to set up resizable and draggable table
+    function setupResizableTable() {
+        const pokerTableContainer = document.querySelector('.poker-table-container');
+        const pokerTable = document.querySelector('.poker-table');
+        const resetTableBtn = document.createElement('button');
+        const zoomControls = document.createElement('div');
+
+        // Create zoom controls
+        zoomControls.className = 'zoom-controls';
+        zoomControls.innerHTML = `
+            <button class="zoom-btn zoom-in" title="Zoom In">+</button>
+            <button class="zoom-btn zoom-out" title="Zoom Out">-</button>
+        `;
+        pokerTableContainer.appendChild(zoomControls);
+
+        // Create reset button
+        resetTableBtn.className = 'reset-table-btn';
+        resetTableBtn.textContent = 'Reset Table';
+        resetTableBtn.title = 'Reset table size and position';
+        pokerTableContainer.appendChild(resetTableBtn);
+
+        // Add zoom in functionality
+        zoomControls.querySelector('.zoom-in').addEventListener('click', function (e) {
+            e.stopPropagation();
+            tableScale = Math.min(tableScale + 0.1, 1.5);
+            applyTableTransform(pokerTable);
+            updatePlayerPositions(); // Recalculate player positions
+        });
+
+        // Add zoom out functionality
+        zoomControls.querySelector('.zoom-out').addEventListener('click', function (e) {
+            e.stopPropagation();
+            tableScale = Math.max(tableScale - 0.1, 0.5);
+            applyTableTransform(pokerTable);
+            updatePlayerPositions(); // Recalculate player positions
+        });
+
+        // Add reset functionality
+        resetTableBtn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            tableScale = 1;
+            tablePositionX = 0;
+            tablePositionY = 0;
+            applyTableTransform(pokerTable);
+            updatePlayerPositions(); // Recalculate player positions
+        });
+
+        // Make table draggable
+        pokerTable.addEventListener('mousedown', function (e) {
+            if (e.target === pokerTable || e.target.classList.contains('table-center')) {
+                tableIsDragging = true;
+                tableDragStartX = e.clientX - tablePositionX;
+                tableDragStartY = e.clientY - tablePositionY;
+                pokerTable.classList.add('dragging');
+                e.preventDefault();
+            }
+        });
+
+        document.addEventListener('mousemove', function (e) {
+            if (tableIsDragging) {
+                tablePositionX = e.clientX - tableDragStartX;
+                tablePositionY = e.clientY - tableDragStartY;
+                applyTableTransform(pokerTable);
+            }
+        });
+
+        document.addEventListener('mouseup', function () {
+            if (tableIsDragging) {
+                tableIsDragging = false;
+                pokerTable.classList.remove('dragging');
+                updatePlayerPositions(); // Recalculate player positions when drag ends
+            }
+        });
+
+        // Handle touch events for mobile
+        pokerTable.addEventListener('touchstart', function (e) {
+            if (e.target === pokerTable || e.target.classList.contains('table-center')) {
+                tableIsDragging = true;
+                const touch = e.touches[0];
+                tableDragStartX = touch.clientX - tablePositionX;
+                tableDragStartY = touch.clientY - tablePositionY;
+                pokerTable.classList.add('dragging');
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', function (e) {
+            if (tableIsDragging) {
+                const touch = e.touches[0];
+                tablePositionX = touch.clientX - tableDragStartX;
+                tablePositionY = touch.clientY - tableDragStartY;
+                applyTableTransform(pokerTable);
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchend', function () {
+            if (tableIsDragging) {
+                tableIsDragging = false;
+                pokerTable.classList.remove('dragging');
+                updatePlayerPositions(); // Recalculate player positions when drag ends
+            }
+        });
+    }
+
+    // Helper function to apply transform to the table
+    function applyTableTransform(pokerTable) {
+        pokerTable.style.transform = `translate(${tablePositionX}px, ${tablePositionY}px) scale(${tableScale})`;
     }
 
     // Update functions for different UI elements
@@ -267,10 +398,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function updatePlayerPositions() {
         playerPositionsEl.innerHTML = '';
 
-        // Adjust table radius to be smaller, giving players more room
-        const tableWidth = playerPositionsEl.offsetWidth;
-        const tableHeight = playerPositionsEl.offsetHeight;
-        const tableRadius = Math.min(tableWidth, tableHeight) * 0.35; // Reduced to 35% of minimum dimension
+        // Get the poker table element
+        const pokerTable = document.querySelector('.poker-table');
+        const tableRect = pokerTable.getBoundingClientRect();
+        const containerRect = playerPositionsEl.getBoundingClientRect();
+
+        // Calculate the table center point accounting for transform
+        const tableCenterX = (tableRect.left + tableRect.right) / 2;
+        const tableCenterY = (tableRect.top + tableRect.bottom) / 2;
+
+        // Adjust table radius based on current scale and size
+        const tableRadius = (Math.min(tableRect.width, tableRect.height) / 2) * 0.95;
         const playerCount = gameState.players.length;
 
         // Calculate better player positioning with specific offsets based on position
@@ -296,8 +434,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            const left = 50 + Math.cos(angle) * tableRadius * radiusMultiplier / (tableWidth / 2) * 100;
-            const top = 50 + Math.sin(angle) * tableRadius * radiusMultiplier / (tableHeight / 2) * 100;
+            // Calculate absolute coordinates
+            const playerX = tableCenterX + Math.cos(angle) * tableRadius * radiusMultiplier * tableScale;
+            const playerY = tableCenterY + Math.sin(angle) * tableRadius * radiusMultiplier * tableScale;
+
+            // Convert to percentage within the container
+            const left = ((playerX - containerRect.left) / containerRect.width) * 100;
+            const top = ((playerY - containerRect.top) / containerRect.height) * 100;
 
             const positionEl = document.createElement('div');
             positionEl.className = 'player-position';
@@ -311,28 +454,41 @@ document.addEventListener('DOMContentLoaded', () => {
             const isBigBlind = index === (gameState.dealer_position + 2) % playerCount;
 
             let blindClass = '';
-            if (isDealer) blindClass = 'dealer';
-            else if (isSmallBlind) blindClass = 'small-blind';
-            else if (isBigBlind) blindClass = 'big-blind';
+            let blindIndicator = '';
 
+            // Create custom indicators with usernames
+            if (isDealer) {
+                blindClass = 'dealer';
+                blindIndicator = `<div class="position-indicator dealer-indicator" title="${player.username} - Dealer">D<span class="indicator-username">${player.username}</span></div>`;
+            }
+            else if (isSmallBlind) {
+                blindClass = 'small-blind';
+                blindIndicator = `<div class="position-indicator sb-indicator" title="${player.username} - Small Blind">SB<span class="indicator-username">${player.username}</span></div>`;
+            }
+            else if (isBigBlind) {
+                blindClass = 'big-blind';
+                blindIndicator = `<div class="position-indicator bb-indicator" title="${player.username} - Big Blind">BB<span class="indicator-username">${player.username}</span></div>`;
+            }
+
+            // Create a more compact player card
             positionEl.innerHTML = `
-                <div class="player-card ${player.folded ? 'folded' : ''} ${player.username === currentUser ? 'active' : ''} ${blindClass}">
-                    <div class="player-name">${player.username}${player.username === currentUser ? ' (You)' : ''}</div>
-                    <div class="player-stats">
-                        <div>Chips: <span class="player-chips">$${player.chips}</span></div>
-                        <div>Bet: $${player.current_bet}</div>
-                    </div>
-                    <div class="player-actions">
-                        <button class="action-btn ${player.folded ? 'add-btn' : 'remove-btn'}" data-action="fold" data-username="${player.username}">
-                            ${player.folded ? '↩️' : '↪️'}
-                        </button>
-                        <button class="action-btn add-btn" data-action="bet" data-username="${player.username}" ${player.folded ? 'disabled' : ''}>
-                            💰
-                        </button>
-                    </div>
+            <div class="player-card ${player.folded ? 'folded' : ''} ${player.username === currentUser ? 'active' : ''} ${blindClass}">
+                <div class="player-stats">
+                    <div class="player-name-line">${player.username}${player.username === currentUser ? ' (You)' : ''}: <span class="player-chips">$${player.chips}</span></div>
+                    <div class="player-bet-line"><span class="current-bet">$${player.current_bet}</span> | <span class="total-bet">$${player.total_bet}</span></div>
                 </div>
-                ${player.current_bet > 0 ? `<div class="player-bet">Bet: $${player.current_bet}</div>` : ''}
-            `;
+                <div class="player-actions">
+                    <button class="action-btn ${player.folded ? 'add-btn' : 'remove-btn'}" data-action="fold" data-username="${player.username}" title="${player.folded ? 'Unfold' : 'Fold'} - ${player.username}">
+                        ${player.folded ? '↩️' : '↪️'}
+                    </button>
+                    <button class="action-btn add-btn" data-action="bet" data-username="${player.username}" ${player.folded ? 'disabled' : ''} title="Bet - ${player.username}">
+                        💰
+                    </button>
+                </div>
+            </div>
+            ${player.current_bet > 0 ? `<div class="player-bet">$${player.current_bet}</div>` : ''}
+            ${blindIndicator}
+        `;
 
             playerPositionsEl.appendChild(positionEl);
         });
@@ -358,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         // Make player positions draggable
-        setupTableDragAndDrop();
+        setupPlayerDragAndDrop();
     }
 
     function updatePotDisplay() {
@@ -615,8 +771,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Drag and drop for table positions
-    function setupTableDragAndDrop() {
+    // Drag and drop for player positions on the table
+    function setupPlayerDragAndDrop() {
         const positions = document.querySelectorAll('.player-position');
         let draggedPosition = null;
 
